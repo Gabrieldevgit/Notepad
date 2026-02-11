@@ -378,6 +378,8 @@
             line-height: 1.6;
             color: #000000;
             min-height: 900px;
+            white-space: pre-wrap; /* Preserve spaces and line breaks */
+            word-wrap: break-word; /* Wrap long lines */
         }
 
         .page-number {
@@ -903,6 +905,7 @@
         <div class="ribbon-content" id="viewRibbon" style="display: none;">
             <div class="ribbon-group">
                 <button class="ribbon-btn" onclick="toggleTheme()">🌓 Theme</button>
+                <button class="ribbon-btn" onclick="toggleCodeMode()" id="codeModeBtn">💻 Code Mode</button>
                 <button class="ribbon-btn" onclick="zoomIn()">🔍+ Zoom In</button>
                 <button class="ribbon-btn" onclick="zoomOut()">🔍- Zoom Out</button>
                 <button class="ribbon-btn" onclick="resetZoom()">100% Reset</button>
@@ -1870,7 +1873,30 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const content = e.target.result;
+                    let content = e.target.result;
+                    
+                    // Check if it's a text file or HTML file
+                    const isHtml = file.name.toLowerCase().endsWith('.html') || 
+                                   file.name.toLowerCase().endsWith('.htm');
+                    
+                    // If it's NOT HTML, escape it and preserve all formatting
+                    if (!isHtml) {
+                        // Escape HTML characters to prevent interpretation
+                        content = content
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;');
+                        
+                        // Convert line breaks to <br> for display
+                        content = content.replace(/\n/g, '<br>');
+                        
+                        // Preserve spaces by converting them to &nbsp; where needed
+                        // But keep single spaces as normal spaces
+                        content = content.replace(/  /g, ' &nbsp;'); // Convert double spaces
+                        content = content.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;'); // Convert tabs to 4 spaces
+                    }
                     
                     // Create new tab for opened file
                     const newDoc = {
@@ -2107,6 +2133,32 @@ Created with ❤️
         function toggleTheme() {
             document.body.classList.toggle('light-theme');
             localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        }
+
+        let isCodeMode = false;
+        function toggleCodeMode() {
+            isCodeMode = !isCodeMode;
+            const pageContent = getCurrentPageContent();
+            const btn = document.getElementById('codeModeBtn');
+            
+            if (pageContent) {
+                if (isCodeMode) {
+                    // Enable code mode
+                    pageContent.style.fontFamily = 'Consolas, "Courier New", monospace';
+                    pageContent.style.fontSize = '10pt';
+                    pageContent.style.whiteSpace = 'pre';
+                    pageContent.style.tabSize = '4';
+                    btn.classList.add('active');
+                    btn.textContent = '💻 Text Mode';
+                } else {
+                    // Disable code mode
+                    pageContent.style.fontFamily = 'Calibri, Arial, sans-serif';
+                    pageContent.style.fontSize = '11pt';
+                    pageContent.style.whiteSpace = 'pre-wrap';
+                    btn.classList.remove('active');
+                    btn.textContent = '💻 Code Mode';
+                }
+            }
         }
 
         function updateZoom(value) {
